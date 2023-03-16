@@ -4,6 +4,9 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const generateRandom = require('./utils/random');
+
+const port = process.env.PORT || 3000;
+
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -81,12 +84,12 @@ io.on('connection', (socket) => {
         //Get room clients
         roomClients = await io.in(roomId).fetchSockets();
 
-      
+
         if (roomClients.length == 1) {
             socket.emit("joined-meeting");
             return;
         }
-       
+
 
         p1 = socketIdToPeerId.get(roomClients[0].id);
         p2 = socketIdToPeerId.get(roomClients[1].id);
@@ -107,10 +110,11 @@ io.on('connection', (socket) => {
 
         const { roomId, code } = data;
         var roomClients = await io.in(roomId).fetchSockets();
-       
-        if(roomClients.length ==0) return;
-       
+
+        if (roomClients.length == 0) return;
+
         var anotherClient = roomClients.filter((client) => client.id != socket.id);
+        if (anotherClient.length == 0) return;
         io.to(anotherClient[0].id).emit('code-change', { code: code });
     })
 
@@ -125,6 +129,4 @@ io.on('connection', (socket) => {
 
 });
 
-server.listen(3000, () => {
-    console.log('listening on *:3000');
-});
+server.listen(port, () => console.log(`Example app listening on port ${port}!`));
