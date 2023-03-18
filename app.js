@@ -1,4 +1,5 @@
 const express = require('express');
+var cors = require('cors')
 const app = express();
 const http = require('http');
 const server = http.createServer(app);
@@ -17,9 +18,13 @@ const io = new Server(server, {
 const socketIdToUser = new Map();
 const socketIdToPeerId = new Map();
 
+app.use(cors());
+
 app.get('/', (req, res) => {
     res.send("ok")
 });
+
+app.use('/compile', require('./routes/compiler'));
 
 app.get('/room/:roomId', async (req, res) => {
     var roomId = req.params.roomId;
@@ -48,7 +53,7 @@ io.on('connection', (socket) => {
 
         // Sending response user succesfully join the room
         socket.emit("joined-room", { roomId: roomId });
-    })
+    });
 
     /* Join Room */
     socket.on('join-room', async (data) => {
@@ -104,7 +109,7 @@ io.on('connection', (socket) => {
             socket.emit("joined-meeting");
         }
 
-    })
+    });
 
     socket.on('code-change', async (data) => {
 
@@ -116,8 +121,7 @@ io.on('connection', (socket) => {
         var anotherClient = roomClients.filter((client) => client.id != socket.id);
         if (anotherClient.length == 0) return;
         io.to(anotherClient[0].id).emit('code-change', { code: code });
-    })
-
+    });
 
     /* client disconnect */
     socket.on('disconnect', () => {

@@ -11,6 +11,8 @@
   "license": "ISC",
   "private": false,
   "dependencies": {
+    "compile-run": "^2.3.4",
+    "compilex": "^0.7.4",
     "express": "^4.18.2",
     "nodemon": "^2.0.21",
     "socket.io": "^4.6.1"
@@ -18,5 +20,4 @@
   "engines": {
     "node": ">=18"
   }
-
 }
