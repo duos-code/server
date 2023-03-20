@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { c, cpp, node, python, java } = require('compile-run');
-const { runJavaFile } = require('compile-run/dist/lib/java/run-file');
-const { runCppSource } = require('compile-run/dist/lib/cpp/run-source');
 
 // For parsing application/json
 router.use(express.json());

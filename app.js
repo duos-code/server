@@ -16,6 +16,7 @@ const io = new Server(server, {
 
 
 const socketIdToUser = new Map();
+const socketIdToRoomId = new Map();
 const socketIdToPeerId = new Map();
 
 app.use(cors());
@@ -49,6 +50,7 @@ io.on('connection', (socket) => {
 
         // Join Room with random Id
         socket.join(roomId);
+        socketIdToRoomId.set(socket.id, roomId);
         console.log(socket.id, ' has joined room ', roomId);
 
         // Sending response user succesfully join the room
@@ -66,6 +68,7 @@ io.on('connection', (socket) => {
         if (roomClients.length < 2) {
 
             socket.join(roomId);
+            socketIdToRoomId.set(socket.id, roomId);
             console.log(socket.id, ' has joined room ', roomId);
 
             // Sending response user succesfully join the room
@@ -104,12 +107,27 @@ io.on('connection', (socket) => {
             var anotherClient = roomClients.filter((client) => client.id != socket.id);
             var peer = socketIdToPeerId.get(anotherClient[0].id);
             socket.emit("joined-meeting-call", { peerId: peer });
+
+            // var remoteUser = socketIdToUser.get(anotherClient[0].id)
+            // io.to(roomId).emit('recived-remoteUser', { user: remoteUser });
+
+            for (const index in roomClients) {
+
+                if (roomClients[index].id != socket.id) {
+                    var remoteUser = socketIdToUser.get(roomClients[index].id)
+                    var remoteUser2 = socketIdToUser.get(socket.id)
+                    socket.emit('recived-remoteUser', { user: remoteUser });
+                    io.to(roomClients[index].id).emit('recived-remoteUser', { user: remoteUser2 });
+                }
+            }
+
         } else {
 
             socket.emit("joined-meeting");
         }
 
     });
+
 
     socket.on('code-change', async (data) => {
 
@@ -123,11 +141,16 @@ io.on('connection', (socket) => {
         io.to(anotherClient[0].id).emit('code-change', { code: code });
     });
 
+
+
     /* client disconnect */
     socket.on('disconnect', () => {
+        roomId = socketIdToRoomId.get(socket.id);
+        socket.to(roomId).emit('disconnected');
         socketIdToUser.delete(socket.id);
-        socketIdToPeerId.get(socket.id);
-        console.warn(socket.id, ' disconnected');
+        socketIdToPeerId.delete(socket.id);
+        socketIdToRoomId.delete(socket.id);
+        console.warn(socket.id, roomId, ' disconnected');
     })
 
 
