@@ -99,33 +99,24 @@ io.on('connection', (socket) => {
         }
 
 
-        p1 = socketIdToPeerId.get(roomClients[0].id);
-        p2 = socketIdToPeerId.get(roomClients[1].id);
-
-
-        if (roomClients.length == 2 && p1 && p2) {
+        if (roomClients.length == 2) {
             var anotherClient = roomClients.filter((client) => client.id != socket.id);
             var peer = socketIdToPeerId.get(anotherClient[0].id);
             socket.emit("joined-meeting-call", { peerId: peer });
 
-            // var remoteUser = socketIdToUser.get(anotherClient[0].id)
-            // io.to(roomId).emit('recived-remoteUser', { user: remoteUser });
-
             for (const index in roomClients) {
 
                 if (roomClients[index].id != socket.id) {
-                    var remoteUser = socketIdToUser.get(roomClients[index].id)
-                    var remoteUser2 = socketIdToUser.get(socket.id)
-                    socket.emit('recived-remoteUser', { user: remoteUser });
-                    io.to(roomClients[index].id).emit('recived-remoteUser', { user: remoteUser2 });
+                    var existedUser = socketIdToUser.get(roomClients[index].id)
+                    var newUser = socketIdToUser.get(socket.id)
+                    // send new user to existed user data
+                    socket.emit('recived-existed-user', { user: existedUser });
+                    // send existed user to new user data  
+                    io.to(roomClients[index].id).emit('new-user-joined', { user: newUser });
                 }
             }
 
-        } else {
-
-            socket.emit("joined-meeting");
         }
-
     });
 
 
@@ -135,18 +126,23 @@ io.on('connection', (socket) => {
         var roomClients = await io.in(roomId).fetchSockets();
 
         if (roomClients.length == 0) return;
-
         var anotherClient = roomClients.filter((client) => client.id != socket.id);
+
         if (anotherClient.length == 0) return;
         io.to(anotherClient[0].id).emit('code-change', { code: code });
     });
+
+    socket.on('send-message', ({ text, username, room }) => {
+        io.to(room).emit('recived-message', { text: text, username: username, time: new Date() });
+    })
 
 
 
     /* client disconnect */
     socket.on('disconnect', () => {
-        roomId = socketIdToRoomId.get(socket.id);
-        socket.to(roomId).emit('disconnected');
+        var roomId = socketIdToRoomId.get(socket.id);
+        var user = socketIdToUser.get(socket.id);
+        socket.to(roomId).emit('disconnected', { user: user });
         socketIdToUser.delete(socket.id);
         socketIdToPeerId.delete(socket.id);
         socketIdToRoomId.delete(socket.id);
